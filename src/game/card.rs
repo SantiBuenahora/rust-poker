@@ -155,6 +155,9 @@ impl Hand {
         let mut trip = None;
         let mut pairs = Vec::new();
         for val in &vals {
+            for card in val.1 {
+                println!("{}", card);
+            }
             let count = val.1.len();
             if count == 4 {
                 quad = Some(val);
@@ -168,71 +171,79 @@ impl Hand {
         }
 
         // label hand by catagory
-        let mut included : Vec<Rc<Card>> = Vec::new();
+        let mut hand : Vec<Rc<Card>> = Vec::new();
         let mut category = Hand_Category::High_Card;
         let mut seen = Vec::new();
 
-        /* if straight_flush.is_some() '
-        []            hand = straight_flush.unwrap();
+        cards.sort_by_key(|k| -(if k.val == 1 { 14 } else { k.val }));
+
+        /* if straight_flush.is_some() {
+            hand.extend_from_slice(&straight_flush.unwrap());
             category = Hand_Category::Straight_Flush;
         
         } else */ if quad.is_some() {
-            included.extend_from_slice(quad.unwrap().1);
+            hand.extend_from_slice(quad.unwrap().1);
             seen.push(*quad.unwrap().0);
             category = Hand_Category::Four_of_a_Kind;
 
         } else if trip.is_some() && !pairs.is_empty() {
-            included.extend_from_slice(trip.unwrap().1);
-            included.extend_from_slice(pairs[0].1);
+            hand.extend_from_slice(trip.unwrap().1);
+            hand.extend_from_slice(pairs[pairs.len()-1].1);
             category = Hand_Category::Full_House;
 
         } else if flush.is_some() {
-            included.extend_from_slice(flush.unwrap().1);
+            hand.extend_from_slice(flush.unwrap().1);
             category = Hand_Category::Flush;
 
         } /* else if straight.is_some() {
-            hand = straight.unwrap();
+            hand.extend_from_slice(&straight.unwrap());
             category = Hand_Category::Straight;
 
         } */ else if trip.is_some() {
-            included.extend_from_slice(trip.unwrap().1);
+            hand.extend_from_slice(trip.unwrap().1);
             seen.push(*trip.unwrap().0);
             category = Hand_Category::Three_of_a_Kind;            
 
         } else if pairs.len() as i32 >= 2 {
-            included.extend_from_slice(pairs[0].1);
-            included.extend_from_slice(pairs[1].1);
-            seen.extend_from_slice(&[*pairs[0].0, *pairs[1].0]);
+            hand.extend_from_slice(pairs[pairs.len()-1].1);
+            hand.extend_from_slice(pairs[pairs.len()-2].1);
+            seen.extend_from_slice(&[*pairs[pairs.len()-1].0, *pairs[pairs.len()-2].0]);
             category = Hand_Category::Two_Pair;
 
         } else if pairs.len() as i32 == 1 {
-            included.extend_from_slice(pairs[0].1);
+            hand.extend_from_slice(pairs[0].1);
             seen.push(*pairs[0].0);
             category = Hand_Category::Pair;
 
         } else {
             cards.truncate(5);
-            included.extend_from_slice(&cards);
+            hand.extend_from_slice(&cards);
         }
 
-        let mut hand = Vec::new();
-        for card in included {
-            hand.push(card.clone());
-        }
         for card in &cards {
-            if (hand.len() as i32) < 5 {
-                break;
-            }
+            if (hand.len() as i32) >= 5 { break; }
             let mut has_val = false;
             for val in &seen {
-                if card.val == *val {
-                    has_val = true;
-                }
+                has_val = card.val == *val || has_val;
             }
             if !has_val {
                 hand.push(card.clone());
             }
         }
         Ok(Hand {cards: hand, category: category })
+    }
+}
+
+impl fmt::Display for Hand {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut str = format!("{} - [", self.category);
+        for i in 0..5 {
+            if i != 4 {
+                str = str + &format!("{}, ", self.cards[i]);
+            } else {
+                str = str + &format!("{}]\n", self.cards[i]);
+            }
+        }
+        write!(f, "{}", str)
     }
 }
