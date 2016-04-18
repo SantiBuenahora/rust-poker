@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    
+    <!-- Font -->
+    <link href='http://fonts.googleapis.com/css?family=Sansita+One' rel='stylesheet' type='text/css'>
+    
+    <style>
+    
+        body {
+            font-family: 'Sansita One', cursive;
+            color:white;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 4.5em;
+        }
+
+        .header {
+/*            position: absolute;*/
+            width: 100%;
+            top: 32%;
+            background-color:#012456;
+        }
+
+    </style>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.0/jquery.min.js"></script>
+    <script type="text/javascript">
+        $.ajax({
+            url: "../cards/svg-cards.svg",
+            type: "get",
+            dataType: "text",
+            success: function(svgText) {
+                var parser = new DOMParser();
+                parser.async = false;
+                var svgEl = $(parser.parseFromString(svgText, 'text/xml').documentElement);
+                svgEl.css("display", "none");
+                $("body").append(svgEl);
+                var kingSpade = $(svgEl).find("#king_spade").clone();
+                kingSpade.removeAttr("id");
+                $("#mysvg").append(kingSpade);
+            }
+        });
+    </script>
+
+</head>
+
+<body>
+    <div class="header">
+        <h1>Rust-Poker</h1>
+    </div>
+    <svg width="500" height="500">
+        <g id="mysvg" transform="translate(-2000,-500)"></g>
+    </svg>
+</body>
+
+
+</body>
+
+</html>

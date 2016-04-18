@@ -1,0 +1,7 @@
+[package]
+name = "src"
+version = "0.1.0"
+authors = ["Santi"]
+
+[dependencies]
+rand = "0.3"
