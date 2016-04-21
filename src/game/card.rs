@@ -1,7 +1,8 @@
 use std::fmt;
-use std::collections::HashMap;
+use std::collections::{HashMap, BTreeMap};
 use std::rc::Rc;
 use std::mem;
+use std::iter::FromIterator;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 pub enum Suit {
@@ -31,10 +32,10 @@ impl fmt::Display for Card {
 
 fn display_val(val: i32) -> String {
     match val {
-        1 => "Ace".to_string(),
         11 => "Jack".to_string(),
         12 => "Queen".to_string(),
         13 => "King".to_string(),
+        14 => "Ace".to_string(),
         v => v.to_string(),
     }
 }
@@ -72,9 +73,9 @@ impl Hand {
         }
 
         // organize cards by suits
-        cards.sort_by_key(|k| -(if k.val == 1 { 14 } else { k.val }));
+        cards.sort_by_key(|k| k.val);
         let mut suits = HashMap::new();
-        let mut vals = HashMap::new();
+        let mut vals = BTreeMap::new();
         
         for card in &cards {
             let ref suit = card.suit;
@@ -94,7 +95,6 @@ impl Hand {
             vals.insert(*val, val_vec);
         }
 
-
         // get existing card hands
         let mut flush = None;
         for suit in &suits {
@@ -103,68 +103,53 @@ impl Hand {
             }
         }
 
-        // let mut straight = None;
-        // let mut distinct_vals = Vec::new();
-        // for val in vals.keys() {
-        //     distinct_vals.push(*val);
-        // }
-        // if (distinct_vals.len() as i32) >= 5 {
-        //     let mut start = None;
-        //     let mut end = None;
-        //     for i in 0..(distinct_vals.len() - 4) {
-        //         if distinct_vals[i] == distinct_vals[i+4] - 4 {
-        //             if start.is_none() && end.is_none() {
-        //                 start = Some(i);
-        //             }
-        //             end = Some(i + 4);
-        //         }
-        //     }
-        //     if start.is_some() && end.is_some() {
-        //         let (start, end) = (start.unwrap(), end.unwrap());
-        //         let mut sequence = Vec::new();
-        //         for val in start..(end + 1) {
-        //             let card = vals[&distinct_vals[val]][0].clone();
-        //             sequence.push(card);
-        //         }
-        //         straight = Some(sequence);
-        //     }
-        // }
-
-        // let mut straight_flush = None;
-        // if flush.is_some() && straight.is_some() {
-        //     let straight = straight.unwrap();
-        //     let suit = flush.unwrap().0;
-        //     'outer: for i in 0..(straight.len() - 4) {
-        //         if straight_flush.is_some() {
-        //             break 'outer;
-        //         }
-        //         let mut sequence = Vec::new();
-        //         'inner: for j in i..(i + 5) {
-        //             if straight[j].suit != *suit {
-        //                 break 'inner;
-        //             }
-        //             sequence.push(straight[j].clone());
-        //         }
-        //         if sequence.len() as i32 == 5 {
-        //             straight_flush = Some(sequence);
-        //         }
-        //     }
-        // }
+        let mut straight = None;
+        let mut distinct_vals = Vec::from_iter(vals.keys().map(|k| *k));
+        if flush.is_some() {
+            distinct_vals = Vec::from_iter(flush.unwrap().1.iter().map(|c| c.val));
+        }
+        // allow ace to be both 1 and 14
+        if distinct_vals[0] == 2 && distinct_vals[distinct_vals.len() - 1] == 14 {
+            distinct_vals.insert(0, 1);
+        }
+        if (distinct_vals.len() as i32) >= 5 {
+            let mut range = None;
+            for i in 0..(distinct_vals.len() - 4) {
+                if distinct_vals[i] == distinct_vals[i + 4] - 4 {
+                    if range.is_none() {
+                        range = Some((distinct_vals[i], distinct_vals[i + 4]));
+                    }
+                    range = Some((range.unwrap().0, distinct_vals[i + 4]));
+                }
+            }
+            if range.is_some() {
+                let (start, end) = range.unwrap();
+                let mut sequence = Vec::new();
+                for mut i in start..(end + 1) {
+                    if i == 1 { i = 14; } // ace
+                    let mut card = vals[&i][0].clone();
+                    if flush.is_some() {
+                        for c in &vals[&i] {
+                            if c.suit == *flush.unwrap().0 {
+                                card = c.clone();
+                            }
+                        }
+                    }
+                    sequence.push(card);
+                }
+                straight = Some(sequence);
+            }
+        }
 
         let mut quad = None;
         let mut trip = None;
         let mut pairs = Vec::new();
         for val in &vals {
-            for card in val.1 {
-                println!("{}", card);
-            }
             let count = val.1.len();
             if count == 4 {
                 quad = Some(val);
             } else if count == 3 {
-                if trip.is_none() {
-                    trip = Some(val);
-                }
+                trip = Some(val);
             } else if count == 2 {
                 pairs.push(val);
             }
@@ -175,13 +160,11 @@ impl Hand {
         let mut category = Hand_Category::High_Card;
         let mut seen = Vec::new();
 
-        cards.sort_by_key(|k| -(if k.val == 1 { 14 } else { k.val }));
-
-        /* if straight_flush.is_some() {
-            hand.extend_from_slice(&straight_flush.unwrap());
+        if straight.is_some() && flush.is_some() {
+            hand.extend_from_slice(&straight.unwrap());
             category = Hand_Category::Straight_Flush;
         
-        } else */ if quad.is_some() {
+        } else if quad.is_some() {
             hand.extend_from_slice(quad.unwrap().1);
             seen.push(*quad.unwrap().0);
             category = Hand_Category::Four_of_a_Kind;
@@ -195,11 +178,11 @@ impl Hand {
             hand.extend_from_slice(flush.unwrap().1);
             category = Hand_Category::Flush;
 
-        } /* else if straight.is_some() {
+        } else if straight.is_some() {
             hand.extend_from_slice(&straight.unwrap());
             category = Hand_Category::Straight;
 
-        } */ else if trip.is_some() {
+        } else if trip.is_some() {
             hand.extend_from_slice(trip.unwrap().1);
             seen.push(*trip.unwrap().0);
             category = Hand_Category::Three_of_a_Kind;            

@@ -19,7 +19,7 @@ impl Table {
         let mut deck = Vec::new();
         let suits = vec![Suit::Spades, Suit::Hearts, Suit::Clubs, Suit::Diamonds];
         for suit in suits {
-            for val in 1..14 {
+            for val in 2..15 {
                 deck.push(Rc::new(Card { suit: suit, val: val }));
             }
         }
