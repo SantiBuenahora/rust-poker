@@ -1,7 +1,6 @@
 use std::fmt;
 use std::collections::{HashMap, BTreeMap};
 use std::rc::Rc;
-use std::mem;
 use std::iter::FromIterator;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]

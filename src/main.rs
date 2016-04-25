@@ -1,31 +1,42 @@
 extern crate rand;
 
 pub mod game;
+pub mod ui;
 
 use game::table::Table;
 use game::player::Player;
 use game::card::{Card, Suit, Hand};
 use std::rc::Rc;
 
-const NUM_PLAYERS: i32 = 4;
-
 fn main() {
     let mut table = Table::build_table();
-    
-    let human_player = Rc::new(Player::new("Santi".to_string()));
-    table.add_player(human_player.clone()).unwrap();
+    ui::game_setup(&mut table);
+    loop {
+        table.deal_cards();
+        while table.is_playing() {
+            table.reveal_cards();
+            table.allow_betting();
+        } 
+        table.evaluate_round(); // round over
+        if table.is_game_over() { // game over
+            println!("The game is over! Thank you for playing :)");
+        }
+    }
+}
 
-    let mut cpu_players = Vec::new();
-
-    for i in 1..NUM_PLAYERS {
-        let cpu_player = Rc::new(Player::new(format!("CPU_{}", i)));
-        table.add_player(cpu_player.clone()).unwrap();
-        cpu_players.push(cpu_player);
+fn process_cards(cards: Vec<Rc<Card>>) -> () {
+    print!("Cards: [");
+    for i in 0..cards.len() {
+        if i != cards.len()-1 { print!("{}, ", cards[i]); } 
+        else { print!("{}]\n", cards[i]); }
     }
 
-    //~~ TEST CASES ~~//
+    let hand = Hand::make_hand(cards).unwrap();
+    println!("{}\n", hand);
+}
 
-    // test : flush
+fn test_hands() -> () {
+    // test : Straight
     let mut cards = Vec::new();
     cards.push(Rc::new(Card { suit: Suit::Spades, val: 8 }));
     cards.push(Rc::new(Card { suit: Suit::Clubs, val: 14 }));
@@ -68,15 +79,4 @@ fn main() {
     cards.push(Rc::new(Card { suit: Suit::Diamonds, val: 7 }));
     cards.push(Rc::new(Card { suit: Suit::Clubs, val: 7 }));
     // process_cards(cards);
-}
-
-fn process_cards(cards: Vec<Rc<Card>>) -> () {
-    print!("Cards: [");
-    for i in 0..cards.len() {
-        if i != cards.len()-1 { print!("{}, ", cards[i]); } 
-        else { print!("{}]\n", cards[i]); }
-    }
-
-    let hand = Hand::make_hand(cards).unwrap();
-    println!("{}\n", hand);
 }

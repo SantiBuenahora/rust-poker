@@ -1,74 +1,57 @@
-// use std::io::{self, Write};
+use std::io::{self, Write};
 
-// use game::player::Player;
-// use game::player::Command;
+use game::player::Player;
+use game::table::Table;
 
-// #[derive(Debug)]
-// enum Error {
-//     Parse,
-//     Quit,
-// }
+use std::rc::Rc;
 
-// pub fn game_loop(mut player: Player) {
-//     loop {
-//         // Print a user input prompt.
-//         println!("{}\n\nExits are: {}.\n\nWhat wouldst thou deau?",
-//                  player, player.location.borrow().neighbors_string());
-//         print!("> ");
-//         io::stdout().flush().unwrap();
+pub fn game_setup(table : &mut Table) {
+    println!("\nWelcome to Rust-Poker!");
+    println!("======================\n");
+    
+    let mut player_name = terminal_request("What's your name?");
+    let human_player = Player::new(player_name, true);
+    table.add_player(human_player);
 
-//         let mut buf = String::new();
-//         match io::stdin().read_line(&mut buf) {
-//             Err(err) => {
-//                 panic!("error: {}", err);
-//             }
-//             Ok(0) => {
-//                 break;
-//             }
-//             Ok(_) => {
-//                 let parse = parse_line(&buf);
-//                 if let Err(Error::Parse) = parse {
-//                     println!("I do not know how to {}!", buf.trim());
-//                 } else if let Err(Error::Quit) = parse {
-//                     break;
-//                 } else if let Ok(cmd) = parse {
-//                     if let Err(_) = player.act(cmd) {
-//                         println!("I don't know how to {}!", buf.trim());
-//                     }
-//                 }
-//                 if player.hp <= 0 {
-//                     println!("You try in vain to shovel more wall chicken into \
-//                               your mouth, but you've been impaled by too many spikes or Trumpi :(");
-//                     println!("You Lose!");
-//                     return;
-//                 }
-//                 if player.won == true {
-//                     println!("You Win!");
-//                     return;
-//                 }
-//             }
-//         }
-//     }
-//     println!("Score: {}", player.gold * 1000);
-// }
+    let mut num_players = 0;
+    while num_players == 0 {
+        let mut num = 1738; // I'm like "Hey, what's up? Hello"
+        while num == 1738 {
+            num = terminal_request("How many players in a game (must be \
+                                between 2 and 9)?").parse().unwrap_or(1738);
+            if num == 1738 {
+                println!("Invalid input! Not a number!");
+            }
+        }
+        if num >= 2 && num <= 9 {
+            num_players = num;
+        } else {
+            println!("Invalid input! Must be between 2 and 9!");
+        }
+    }
+    
+    for i in 1..num_players {
+        let cpu_player = Player::new(format!("CPU_{}", i), false);
+        table.add_player(cpu_player);
+    }
+}
 
-// fn parse_line(buf: &String) -> Result<Command, Error> {
-//     use game::player::Command::*;
+fn terminal_request(request : &str) -> String {
+    println!("{}", request);
+    print!("> ");
 
-//     let tokens = buf.trim().split_whitespace();
-//     let mut tokens = tokens.map(|t| String::from(t).to_lowercase());
-
-//     let cmd = try!(tokens.next().ok_or(Error::Parse));
-//     if cmd == "go" {
-//         let room = try!(tokens.next().ok_or(Error::Parse));
-//         Ok(Go(room))
-//     } else if cmd == "shoot" {
-//         let room = try!(tokens.next().ok_or(Error::Parse));
-//         Ok(Shoot(room))
-//     } else if cmd == "quit" {
-//         println!("Bye forever :(");
-//         Err(Error::Quit)
-//     } else {
-//         Err(Error::Parse)
-//     }
-// }
+    while true {
+        io::stdout().flush().unwrap();
+        let mut buf = String::new();
+        match io::stdin().read_line(&mut buf) {
+            Ok(_) => {
+                return buf.trim().to_string();
+            }
+            _ => {}
+        }
+        println!("Invalid input!");
+        println!("Again, {}", request);
+        print!("> ");
+    }
+    return String::new();
+}
