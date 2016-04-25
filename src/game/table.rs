@@ -4,12 +4,13 @@ use super::card::{Card, Suit};
 
 use rand::{thread_rng, Rng};
 use std::rc::Rc;
+use std::cell::RefCell;
 
 pub struct Table {
-    players: Vec<Rc<Player>>,
-    active_players: Vec<Rc<Player>>,
-    deck: Vec<Card>,
-    community_cards: Vec<Card>,
+    players: Vec<Rc<RefCell<Player>>>,
+    active_players: Vec<Rc<RefCell<Player>>>,
+    deck: Vec<Rc<Card>>,
+    community_cards: Vec<Rc<Card>>,
     pot: i32,
 }
 
@@ -19,7 +20,7 @@ impl Table {
         let suits = vec![Suit::Spades, Suit::Hearts, Suit::Clubs, Suit::Diamonds];
         for suit in suits {
             for val in 2..15 {
-                deck.push(Card { suit: suit, val: val });
+                deck.push(Rc::new(Card { suit: suit, val: val }));
             }
         }
         let players = Vec::new();
@@ -28,7 +29,7 @@ impl Table {
     }
 
     pub fn add_player(&mut self, player: Player) {
-        self.players.push(Rc::new(player));
+        self.players.push(Rc::new(RefCell::new(player)));
     }
 
     pub fn is_playing(&self) -> bool {
@@ -39,16 +40,16 @@ impl Table {
         return self.players.len() as i32 == 1;
     }
 
-    fn deal_card(&mut self) -> Card {
+    fn deal_card(&mut self) -> Rc<Card> {
         let mut rng = thread_rng();
         let idx = rng.gen_range(0, self.deck.len());
         self.deck.remove(idx)
     }
 
     pub fn deal_cards(&mut self) {
-        let cards = (self.deal_card(), self.deal_card());
-        for player in &mut self.players {
-            (*player).set_cards(cards.0, cards.1);
+        for i in 0..self.players.len() {
+            let cards = (self.deal_card(), self.deal_card());
+            self.players[i].borrow_mut().set_cards(cards);
         }
     }
 
@@ -64,16 +65,34 @@ impl Table {
     }
 
     pub fn allow_betting(&mut self) {
-        for player in self.players {
-            if player.is_human {
-                HumanPlayer::act(&mut *player);
+        for player in &self.active_players {
+            if player.borrow().is_human {
+                HumanPlayer::act(&**player, &self);
             } else {
-                ComputerPlayer::act(&mut *player.clone());
+                ComputerPlayer::act(&**player, &self);
             }
-        }    
+        }
     }
 
     pub fn evaluate_round(&mut self) {
-        // TODO
+        let winner = if self.active_players.len() as i32 == 1 { // one person left
+            self.active_players.pop().unwrap()
+
+        } else { // contested
+            let mut hands = Vec::new();
+            for player in &self.active_players {
+                let (c1, c2) = (*player).borrow_mut().get_cards();
+                let mut hand = Vec::new();
+                hand.extend_from_slice(&self.community_cards);
+                hand.extend_from_slice(&[c1, c2]);
+                hands.push(hand);
+            }
+            self.active_players.pop().unwrap()
+        };
+        self.declare_winner(winner);
+    }
+
+    fn declare_winner(&self, winner: Rc<RefCell<Player>>) {
+        println!("The winner is {}!", (*winner).borrow().name);
     }
 }

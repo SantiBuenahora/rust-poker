@@ -1,6 +1,7 @@
 use super::card::Card;
 use super::table::Table;
 use std::rc::Rc;
+use std::cell::RefCell;
 
 const CHIPS_AT_START: i32 = 100;
 
@@ -9,7 +10,7 @@ pub struct Player {
     pub is_human: bool,
     pub chips: i32,
     pub chips_in_play: Option<i32>,
-    pub cards: Option<(Card, Card)>,
+    pub cards: Option<(Rc<Card>, Rc<Card>)>,
 }
 
 impl Player {
@@ -22,9 +23,17 @@ impl Player {
             cards: None
         }
     }
-    pub fn set_cards(&mut self, c1: Card, c2: Card) {
-        self.cards = Some((c1, c2));
+
+    pub fn set_cards(&mut self, cards: (Rc<Card>, Rc<Card>)) {
+        self.cards = Some(cards);
     }
+
+    pub fn get_cards(&mut self) -> (Rc<Card>, Rc<Card>) {
+        let c1 = self.cards.as_ref().unwrap().0.clone();
+        let c2 = (*self).cards.as_ref().unwrap().1.clone();
+        (c1, c2)
+    }
+
     pub fn print_status(&self) {
         print!("{}: ${} total; ", self.name, self.chips);
         if self.chips_in_play.is_some() {
@@ -37,22 +46,22 @@ impl Player {
 }
 
 pub trait ComputerPlayer {
-    fn act(&mut self);
+    fn act(&self, table: &Table);
 }
 
 pub trait HumanPlayer {
-    fn act(&mut self);
+    fn act(&self, table: &Table);
 }
 
-impl ComputerPlayer for Player {
-    fn act(&mut self) {
-        // TODO
+impl ComputerPlayer for RefCell<Player> {
+    fn act(&self, table: &Table) {
+        self.borrow().print_status();
     }
 }
 
-impl HumanPlayer for Player {
-    fn act(&mut self) {
-        // TODO
+impl HumanPlayer for RefCell<Player> {
+    fn act(&self, table: &Table) {
+        self.borrow().print_status();
     }
 }
 

@@ -16,7 +16,7 @@ fn main() {
         while table.is_playing() {
             table.reveal_cards();
             table.allow_betting();
-        } 
+        }
         table.evaluate_round(); // round over
         if table.is_game_over() { // game over
             println!("The game is over! Thank you for playing :)");
