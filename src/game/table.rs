@@ -8,8 +8,8 @@ use std::cell::RefCell;
 use std::cmp::Ordering;
 
 pub struct Table {
-    players: Vec<Rc<RefCell<Player>>>,
-    active_players: Vec<Rc<RefCell<Player>>>,
+    players: Vec<Player>,
+    active_players: Vec<Player>,
     deck: Vec<Rc<Card>>,
     community_cards: Vec<Rc<Card>>,
     pot: i32,
@@ -30,7 +30,7 @@ impl Table {
     }
 
     pub fn add_player(&mut self, player: Player) {
-        self.players.push(Rc::new(RefCell::new(player)));
+        self.players.push(player);
     }
 
     pub fn is_playing(&self) -> bool {
@@ -48,14 +48,15 @@ impl Table {
     }
 
     pub fn deal_cards(&mut self) {
-        for i in 0..self.players.len() {
-            let cards = (self.deal_card(), self.deal_card());
-            self.players[i].borrow_mut().set_cards(cards);
-            self.active_players.push(self.players[i].clone());
-            if self.players[i].borrow().is_human {
-                let (c1, c2) = self.players[i].borrow().cards.as_ref().unwrap().clone();
+        while !self.players.is_empty() {
+            let mut player = self.players.pop().unwrap();
+            let (c1, c2) = (self.deal_card(), self.deal_card());
+            player.cards = Some((c1.clone(), c2.clone()));
+            
+            if player.is_human {
                 println!("Here are your cards: [{}, {}]", c1, c2);
             }
+            self.active_players.push(player);
         }
     }
 
@@ -77,71 +78,77 @@ impl Table {
 
     pub fn allow_betting(&mut self) {
         for i in 0..self.active_players.len() {
-            let player = self.active_players[i].as_ref();
-            if player.borrow().is_human {
-                HumanPlayer::act(*player, self);
+            let ref player = self.active_players[i];
+            let cmd = if player.is_human {
+                HumanPlayer::act(player, self);
             } else {
-                ComputerPlayer::act(*player, self);
-            }
+                ComputerPlayer::act(player, self);
+            };
         }
     }
 
-    pub fn withdraw_player(&mut self, player: RefCell<Player>) {
-        let mut idx : usize = 0;
-        for i in 0..self.active_players.len() {
-            if self.active_players[i].borrow().name == player.borrow().name {
-                idx = i;
-            }
-        }
-        self.active_players.remove(idx);
-    }
+    // pub fn withdraw_player(&mut self, player: RefCell<Player>) {
+    //     let mut idx : usize = 0;
+    //     for i in 0..self.active_players.len() {
+    //         if self.active_players[i].borrow().name == player.borrow().name {
+    //             idx = i;
+    //         }
+    //     }
+    //     self.active_players.remove(idx);
+    // }
 
     pub fn evaluate_round(&mut self) {
         let mut winners = Vec::new();
         if self.active_players.len() as i32 == 1 { // one person left
-            winners.push(self.active_players.pop().unwrap());
+            let winner = &self.active_players[0];
+            let (c1, c2) = winner.get_cards();
+            let mut hand = vec![c1, c2];
+            hand.extend_from_slice(&self.community_cards);
+            let hand = Hand::make_hand(hand).unwrap();
+            
+            winners.push((hand, winner.name.clone()));
 
         } else { // contested
             let mut hands = Vec::new();
             for player in &self.active_players {
-                let (c1, c2) = (*player).borrow_mut().get_cards();
                 let mut hand = Vec::new();
-                println!("{}: {}", player.borrow().name, display_cards(&vec![c1.clone(), c2.clone()])); // DEL
+                let (c1, c2) = player.get_cards();
                 hand.extend_from_slice(&self.community_cards);
                 hand.extend_from_slice(&[c1, c2]);
-                hands.push((Hand::make_hand(hand).unwrap(), player.clone()));
+                hands.push((Hand::make_hand(hand).unwrap(), player.name.clone()));
             }
+
             hands.sort_by(|h1, h2| (*h2).0.cmp(&h1.0)); // sort by hand
             let (best, winner) = hands.remove(0);
-            for hand in hands {
-                let (hand, player) = hand;
+            for (hand, player) in hands {
                 if hand.cmp(&best) == Ordering::Equal {
-                    player.borrow_mut().hand = Some(hand);
-                    winners.push(player.clone());
+                    winners.push((hand, player));
                 }
             }
-            winner.borrow_mut().hand = Some(best);
-            winners.push(winner.clone());
+            winners.push((best, winner));
         };
         self.reset_table();
         self.declare_winner(winners);
     }
 
-    fn declare_winner(&self, winners: Vec<Rc<RefCell<Player>>>) {
+    fn declare_winner(&self, winners: Vec<(Hand, String)>) {
         print!("The winner(s) is : ");
-        for winner in &winners {
-            let winner = (*winner).borrow();
-            println!("{} with {}", winner.name, winner.hand.as_ref().unwrap());
+        for winner in winners {
+            let (hand, name) = winner;
+            println!("{} with {}", name, hand);
         }
     }
 
     fn reset_table(&mut self) {
-        for player in &self.active_players {
-            let (c1, c2) = player.borrow_mut().get_cards();
-            self.deck.extend_from_slice(&[c1, c2]);
-            player.borrow_mut().cards = None;
+        while !self.active_players.is_empty() {
+            let mut player = self.active_players.remove(0);
+
+            let (c1, c2) = player.get_cards();
+            self.deck.extend_from_slice(&[c1, c2]); // return cards to deck
+            player.cards = None;
+
+            self.players.push(player); // return player to players
         }
-        self.active_players = Vec::new();
     }
 }
 

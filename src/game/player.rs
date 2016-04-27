@@ -13,7 +13,6 @@ pub struct Player {
     pub chips: i32,
     pub chips_in_play: Option<i32>,
     pub cards: Option<(Rc<Card>, Rc<Card>)>,
-    pub hand: Option<Hand>,
 }
 
 impl Player {
@@ -24,57 +23,39 @@ impl Player {
             chips: CHIPS_AT_START,
             chips_in_play: None,
             cards: None,
-            hand: None,
         }
     }
 
-    pub fn set_cards(&mut self, cards: (Rc<Card>, Rc<Card>)) {
-        self.cards = Some(cards);
+    pub fn get_cards(&self) -> (Rc<Card>, Rc<Card>) {
+        self.cards.as_ref().unwrap().clone()
     }
 
-    pub fn get_cards(&mut self) -> (Rc<Card>, Rc<Card>) {
-        let c1 = self.cards.as_ref().unwrap().0.clone();
-        let c2 = (*self).cards.as_ref().unwrap().1.clone();
-        (c1, c2)
-    }
-
-    pub fn print_status(&self) {
-        print!("{}: ${} total; ", self.name, self.chips);
-        if self.chips_in_play.is_some() {
-            println!("${} in pot", self.chips_in_play.unwrap());
-        } else {
-            println!("Inactive in round");
-        }
+    fn get_options(table: &Table) -> Vec<Command> {
+        
     }
 }
 
 pub trait ComputerPlayer {
-    fn act(self, table: &mut Table);
+    fn act(&self, table: &Table) -> Command;
 }
 
 pub trait HumanPlayer {
-    fn act(self, table: &mut Table);
+    fn act(&self, table: &Table) -> Command;
 }
 
-impl ComputerPlayer for RefCell<Player> {
-    fn act(self, table: &mut Table) {
+impl ComputerPlayer for Player {
+    fn act(&self, table: &Table) -> Command {
         // TODO
+        Command::Check
     }
 }
 
-impl HumanPlayer for RefCell<Player> {
-    fn act(self, table: &mut Table) {
-        let options = vec![Command::Check, Command::Fold];
-        match ui::get_player_action(options) {
-            Command::PostBlind => {},
-            Command::Fold => {
-                table.withdraw_player(self.clone());
-            },
-            Command::Check => {},
-            Command::Call => {},
-            Command::Raise(i32) => {},
-            Command::Leave => {},
-        }
+impl HumanPlayer for Player {
+    fn act(&self, table: &Table) -> Command {
+        // let options = vec![Command::Check, Command::Fold];
+        // let cmd = ui::get_player_action(options);
+        // table.process_command(cmd)
+        Command::Check
     }
 }
 
@@ -110,3 +91,22 @@ pub enum Command {
 //     //     println!("{}", )
 //     // }
 // }
+
+
+        // match  {
+        //     Command::PostBlind => {},
+        //     Command::Fold => {}, // table.withdraw_player(self.clone());
+        //     Command::Check => {},
+        //     Command::Call => {},
+        //     Command::Raise(i32) => {},
+        //     Command::Leave => {},
+        // }
+
+    // pub fn print_status(&self) {
+    //     print!("{}: ${} total; ", self.name, self.chips);
+    //     if self.chips_in_play.is_some() {
+    //         println!("${} in pot", self.chips_in_play.unwrap());
+    //     } else {
+    //         println!("Inactive in round");
+    //     }
+    // }
