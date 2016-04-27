@@ -88,7 +88,7 @@ impl Table {
         }
     }
 
-    // pub fn withdraw_player(&mut self, player: RefCell<Player>) {
+    // pub fn withdraw_player(&mut self, player: &Player) {
     //     let mut idx : usize = 0;
     //     for i in 0..self.active_players.len() {
     //         if self.active_players[i].borrow().name == player.borrow().name {

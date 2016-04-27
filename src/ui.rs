@@ -49,10 +49,10 @@ pub fn get_player_action(options: Vec<Command>) -> Command {
     request.pop(); // remove final comma
     request = request + "?";
 
-    let mut action = terminal_request(&request);
-    let action = action.to_lowercase();
     let mut parsed = Err(());
     while parsed.is_err() {
+        let mut action = terminal_request(&request);
+        let action = action.to_lowercase();
         parsed = match action.clone().as_str() {
             "post blind" => Ok(Command::PostBlind),
             "fold" => Ok(Command::Fold),
@@ -74,6 +74,9 @@ pub fn get_player_action(options: Vec<Command>) -> Command {
                 // Ok(Command::Raise(x))
                 Err(())
             }
+        };
+        if parsed.is_err() {
+            println!("Invalid command!");
         }
     }
     parsed.unwrap()
