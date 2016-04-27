@@ -11,7 +11,7 @@ use std::rc::Rc;
 fn main() {
     let mut table = Table::build_table();
     ui::game_setup(&mut table);
-    loop {
+    for i in 0..1 {
         table.deal_cards();
         while table.is_playing() {
             table.reveal_cards();
@@ -22,17 +22,6 @@ fn main() {
             println!("The game is over! Thank you for playing :)");
         }
     }
-}
-
-fn process_cards(cards: Vec<Rc<Card>>) -> () {
-    print!("Cards: [");
-    for i in 0..cards.len() {
-        if i != cards.len()-1 { print!("{}, ", cards[i]); } 
-        else { print!("{}]\n", cards[i]); }
-    }
-
-    let hand = Hand::make_hand(cards).unwrap();
-    println!("{}\n", hand);
 }
 
 fn test_hands() -> () {

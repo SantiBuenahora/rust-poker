@@ -1,5 +1,7 @@
-use super::card::Card;
+use super::card::{Card, Hand};
 use super::table::Table;
+use ui;
+
 use std::rc::Rc;
 use std::cell::RefCell;
 
@@ -11,6 +13,7 @@ pub struct Player {
     pub chips: i32,
     pub chips_in_play: Option<i32>,
     pub cards: Option<(Rc<Card>, Rc<Card>)>,
+    pub hand: Option<Hand>,
 }
 
 impl Player {
@@ -20,7 +23,8 @@ impl Player {
             is_human: is_human,
             chips: CHIPS_AT_START,
             chips_in_play: None,
-            cards: None
+            cards: None,
+            hand: None,
         }
     }
 
@@ -41,39 +45,52 @@ impl Player {
         } else {
             println!("Inactive in round");
         }
-
     }
 }
 
 pub trait ComputerPlayer {
-    fn act(&self, table: &Table);
+    fn act(self, table: &mut Table);
 }
 
 pub trait HumanPlayer {
-    fn act(&self, table: &Table);
+    fn act(self, table: &mut Table);
 }
 
 impl ComputerPlayer for RefCell<Player> {
-    fn act(&self, table: &Table) {
-        self.borrow().print_status();
+    fn act(self, table: &mut Table) {
+        // TODO
     }
 }
 
 impl HumanPlayer for RefCell<Player> {
-    fn act(&self, table: &Table) {
-        self.borrow().print_status();
+    fn act(self, table: &mut Table) {
+        let options = vec![Command::Check, Command::Fold];
+        match ui::get_player_action(options) {
+            Command::PostBlind => {},
+            Command::Fold => {
+                table.withdraw_player(self.clone());
+            },
+            Command::Check => {},
+            Command::Call => {},
+            Command::Raise(i32) => {},
+            Command::Leave => {},
+        }
     }
+}
+
+pub enum Command {
+    PostBlind,
+    Fold,
+    Check,
+    Call,
+    Raise(i32),
+    Leave,
 }
 
     // // Execute the given command on the player and board state.
     // pub fn act(&mut self, cmd: Command) -> Result<(), ()> {
     //     match cmd {
-    //         Command::PostBlind => {},
-    //         Command::Fold => {},
-    //         Command::Check => {},
-    //         Command::Call => {},
-    //         Command::Raise(i32) => {},
-    //         Command::Leave => {},
+
     //     }
     //     Ok(())
     // }
@@ -84,15 +101,6 @@ impl HumanPlayer for RefCell<Player> {
 
 // impl T for Player {
 
-// }
-
-// pub enum Command {
-//     PostBlind,
-//     Fold,
-//     Check,
-//     Call,
-//     Raise(i32),
-//     Leave,
 // }
 
 // impl Player {

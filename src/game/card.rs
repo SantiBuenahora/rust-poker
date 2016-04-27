@@ -2,6 +2,7 @@ use std::fmt;
 use std::collections::{HashMap, BTreeMap};
 use std::rc::Rc;
 use std::iter::FromIterator;
+use std::cmp::Ordering;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 pub enum Suit {
@@ -17,7 +18,7 @@ impl fmt::Display for Suit {
     }
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct Card {
     pub suit: Suit,
     pub val: i32,
@@ -39,7 +40,19 @@ fn display_val(val: i32) -> String {
     }
 }
 
-#[derive(Debug)]
+impl PartialOrd for Card {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.val.cmp(&other.val))
+    }
+}
+
+impl Ord for Card {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.val.cmp(&other.val)
+    }
+}
+
+#[derive(Debug, PartialOrd, Ord, Eq, PartialEq)]
 pub enum Hand_Category {
     High_Card,
     Pair,
@@ -59,7 +72,7 @@ impl fmt::Display for Hand_Category {
 }
 
 // invariant : hand composed of exactly 5 cards
-#[derive(Debug)]
+#[derive(Debug, PartialOrd, Eq, PartialEq)]
 pub struct Hand {
     pub cards: Vec<Rc<Card>>,
     pub category: Hand_Category, 
@@ -154,7 +167,7 @@ impl Hand {
             }
         }
 
-        // label hand by catagory
+        // label hand by category
         let mut hand : Vec<Rc<Card>> = Vec::new();
         let mut category = Hand_Category::High_Card;
         let mut seen = Vec::new();
@@ -212,6 +225,7 @@ impl Hand {
                 hand.push(card.clone());
             }
         }
+        hand.sort();
         Ok(Hand {cards: hand, category: category })
     }
 }
@@ -227,5 +241,20 @@ impl fmt::Display for Hand {
             }
         }
         write!(f, "{}", str)
+    }
+}
+
+impl Ord for Hand {
+    fn cmp(&self, other: &Self) -> Ordering {
+        let mut ord = self.category.cmp(&other.category);
+        if ord == Ordering::Equal {
+            for i in 0..5 {
+                let card_ord = self.cards[i].cmp(&other.cards[i]);
+                if card_ord != Ordering::Equal {
+                    return card_ord;
+                }
+            }
+        }
+        ord
     }
 }
