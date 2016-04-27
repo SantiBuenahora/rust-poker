@@ -4,6 +4,7 @@ use ui;
 
 use std::rc::Rc;
 use std::cell::RefCell;
+use std::fmt;
 
 const CHIPS_AT_START: i32 = 100;
 
@@ -11,7 +12,7 @@ pub struct Player {
     pub name: String,
     pub is_human: bool,
     pub chips: i32,
-    pub chips_in_play: Option<i32>,
+    pub chips_in_play: i32,
     pub cards: Option<(Rc<Card>, Rc<Card>)>,
 }
 
@@ -21,7 +22,7 @@ impl Player {
             name: name,
             is_human: is_human,
             chips: CHIPS_AT_START,
-            chips_in_play: None,
+            chips_in_play: 0,
             cards: None,
         }
     }
@@ -30,8 +31,27 @@ impl Player {
         self.cards.as_ref().unwrap().clone()
     }
 
-    fn get_options(table: &Table) -> Vec<Command> {
+    fn get_options(&self, table: &Table) -> Vec<Command> {
+        let largest_bet = table.largest_bet.clone();
+        let chips = self.chips.clone();
+        let chips_in_play = self.chips_in_play.clone();
+        assert!(chips > largest_bet);
+
+        let mut options = if table.get_betting_round() == 1 {
+            vec![Command::PostBlind]
         
+        } else {
+            let mut options = vec![Command::Fold, Command::Raise(chips - largest_bet)];
+            if largest_bet > chips_in_play {
+                options.push(Command::Call);
+
+            } else if largest_bet == chips_in_play {
+                options.push(Command::Check);
+            }
+            options
+        };
+        options.push(Command::Leave);
+        options
     }
 }
 
@@ -52,13 +72,12 @@ impl ComputerPlayer for Player {
 
 impl HumanPlayer for Player {
     fn act(&self, table: &Table) -> Command {
-        // let options = vec![Command::Check, Command::Fold];
-        // let cmd = ui::get_player_action(options);
-        // table.process_command(cmd)
-        Command::Check
+        let options = self.get_options(table);
+        ui::get_player_action(options)
     }
 }
 
+#[derive(Debug)]
 pub enum Command {
     PostBlind,
     Fold,
@@ -66,6 +85,16 @@ pub enum Command {
     Call,
     Raise(i32),
     Leave,
+}
+
+impl fmt::Display for Command {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            &Command::PostBlind => write!(f, "Post Blind"),
+            &Command::Raise(x) => write!(f, "Raise _ (max is {})", x),
+            cmd => write!(f, "{}", format!("{:?}", cmd)),
+        }
+    }
 }
 
     // // Execute the given command on the player and board state.

@@ -13,10 +13,12 @@ fn main() {
     ui::game_setup(&mut table);
     for i in 0..1 {
         table.deal_cards();
+        table.allow_betting();
         while table.is_playing() {
             table.reveal_cards();
             table.allow_betting();
         }
+        table.show_cards();
         table.evaluate_round(); // round over
         if table.is_game_over() { // game over
             println!("The game is over! Thank you for playing :)");

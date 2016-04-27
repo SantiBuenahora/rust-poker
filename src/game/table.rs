@@ -13,6 +13,7 @@ pub struct Table {
     deck: Vec<Rc<Card>>,
     community_cards: Vec<Rc<Card>>,
     pot: i32,
+    pub largest_bet: i32,
 }
 
 impl Table {
@@ -25,20 +26,12 @@ impl Table {
             }
         }
         let players = Vec::new();
-        Table { players: players, active_players: Vec::new(),
-                deck: deck, community_cards: Vec::new(), pot: 0 }
+        Table { players: players, active_players: Vec::new(), deck: deck, 
+                community_cards: Vec::new(), pot: 0, largest_bet: 0 }
     }
 
     pub fn add_player(&mut self, player: Player) {
         self.players.push(player);
-    }
-
-    pub fn is_playing(&self) -> bool {
-        return self.active_players.len() as i32 >= 2 && self.community_cards.len() as i32 != 5;
-    }
-
-    pub fn is_game_over(&self) -> bool {
-        return self.players.len() as i32 == 1;
     }
 
     fn deal_card(&mut self) -> Rc<Card> {
@@ -74,6 +67,14 @@ impl Table {
 
     fn print_community_cards(&self) {
         println!("community cards: {}", display_cards(&self.community_cards));
+    }
+
+    pub fn show_cards(&self) {
+        for i in 0..self.active_players.len() {
+            let ref player = self.active_players[i];
+            let (c1, c2) = player.get_cards();
+            print!("{}: {}", player.name, display_cards(&vec![c1, c2]))
+        }
     }
 
     pub fn allow_betting(&mut self) {
@@ -149,6 +150,24 @@ impl Table {
 
             self.players.push(player); // return player to players
         }
+    }
+
+    pub fn get_betting_round(&self) -> i32 {
+        match self.community_cards.len() as i32 {
+            0 => 1, // pre-flop
+            3 => 2, // pre-turn
+            4 => 3, // pre-river
+            5 => 4, // post-river
+            _ => -1, // ~impossible
+        }
+    }
+
+    pub fn is_playing(&self) -> bool {
+        return self.active_players.len() as i32 >= 2 && self.community_cards.len() as i32 != 5;
+    }
+
+    pub fn is_game_over(&self) -> bool {
+        return self.players.len() as i32 == 1;
     }
 }
 
