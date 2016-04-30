@@ -3,15 +3,14 @@ extern crate rand;
 pub mod game;
 pub mod ui;
 
+#[allow(non_camel_case_types)]
 use game::table::Table;
-use game::player::Player;
-use game::card::{Card, Suit, Hand};
 use std::rc::Rc;
 
 fn main() {
     let mut table = Table::build_table();
     ui::game_setup(&mut table);
-    for i in 0..1 {
+    loop {
         table.deal_cards();
         table.allow_betting();
         while table.is_playing() {
@@ -26,6 +25,7 @@ fn main() {
     }
 }
 
+/*
 fn test_hands() -> () {
     // test : Straight
     let mut cards = Vec::new();
@@ -70,4 +70,4 @@ fn test_hands() -> () {
     cards.push(Rc::new(Card { suit: Suit::Diamonds, val: 7 }));
     cards.push(Rc::new(Card { suit: Suit::Clubs, val: 7 }));
     // process_cards(cards);
-}
+} */

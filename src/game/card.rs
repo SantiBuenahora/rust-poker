@@ -53,7 +53,8 @@ impl Ord for Card {
 }
 
 #[derive(Debug, PartialOrd, Ord, Eq, PartialEq)]
-pub enum Hand_Category {
+#[allow(non_camel_case_types)]
+pub enum HandCategory {
     High_Card,
     Pair,
     Two_Pair,
@@ -65,7 +66,7 @@ pub enum Hand_Category {
     Straight_Flush,
 }
 
-impl fmt::Display for Hand_Category {
+impl fmt::Display for HandCategory {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", format!("{:?}", *self).replace("_", " "))
     }
@@ -75,7 +76,7 @@ impl fmt::Display for Hand_Category {
 #[derive(Debug, PartialOrd, Eq, PartialEq)]
 pub struct Hand {
     pub cards: Vec<Rc<Card>>,
-    pub category: Hand_Category, 
+    pub category: HandCategory, 
 }
 
 impl Hand {
@@ -169,46 +170,46 @@ impl Hand {
 
         // label hand by category
         let mut hand : Vec<Rc<Card>> = Vec::new();
-        let mut category = Hand_Category::High_Card;
+        let mut category = HandCategory::High_Card;
         let mut seen = Vec::new();
 
         if straight.is_some() && flush.is_some() {
             hand.extend_from_slice(&straight.unwrap());
-            category = Hand_Category::Straight_Flush;
+            category = HandCategory::Straight_Flush;
         
         } else if quad.is_some() {
             hand.extend_from_slice(quad.unwrap().1);
             seen.push(*quad.unwrap().0);
-            category = Hand_Category::Four_of_a_Kind;
+            category = HandCategory::Four_of_a_Kind;
 
         } else if trip.is_some() && !pairs.is_empty() {
             hand.extend_from_slice(trip.unwrap().1);
             hand.extend_from_slice(pairs[pairs.len()-1].1);
-            category = Hand_Category::Full_House;
+            category = HandCategory::Full_House;
 
         } else if flush.is_some() {
             hand.extend_from_slice(flush.unwrap().1);
-            category = Hand_Category::Flush;
+            category = HandCategory::Flush;
 
         } else if straight.is_some() {
             hand.extend_from_slice(&straight.unwrap());
-            category = Hand_Category::Straight;
+            category = HandCategory::Straight;
 
         } else if trip.is_some() {
             hand.extend_from_slice(trip.unwrap().1);
             seen.push(*trip.unwrap().0);
-            category = Hand_Category::Three_of_a_Kind;            
+            category = HandCategory::Three_of_a_Kind;            
 
         } else if pairs.len() as i32 >= 2 {
             hand.extend_from_slice(pairs[pairs.len()-1].1);
             hand.extend_from_slice(pairs[pairs.len()-2].1);
             seen.extend_from_slice(&[*pairs[pairs.len()-1].0, *pairs[pairs.len()-2].0]);
-            category = Hand_Category::Two_Pair;
+            category = HandCategory::Two_Pair;
 
         } else if pairs.len() as i32 == 1 {
             hand.extend_from_slice(pairs[0].1);
             seen.push(*pairs[0].0);
-            category = Hand_Category::Pair;
+            category = HandCategory::Pair;
 
         } else {
             cards.truncate(5);
@@ -246,7 +247,7 @@ impl fmt::Display for Hand {
 
 impl Ord for Hand {
     fn cmp(&self, other: &Self) -> Ordering {
-        let mut ord = self.category.cmp(&other.category);
+        let ord = self.category.cmp(&other.category);
         if ord == Ordering::Equal {
             for i in 0..5 {
                 let card_ord = self.cards[i].cmp(&other.cards[i]);

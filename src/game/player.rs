@@ -1,9 +1,8 @@
-use super::card::{Card, Hand};
+use super::card::Card;
 use super::table::Table;
 use ui;
 
 use std::rc::Rc;
-use std::cell::RefCell;
 use std::fmt;
 
 const CHIPS_AT_START: i32 = 100;
@@ -41,7 +40,7 @@ impl Player {
             vec![Command::PostBlind]
         
         } else {
-            let mut options = vec![Command::Fold, Command::Raise(chips - largest_bet)];
+            let mut options = vec![Command::Raise(chips - largest_bet)];
             if largest_bet > chips_in_play {
                 options.push(Command::Call);
 
@@ -50,7 +49,7 @@ impl Player {
             }
             options
         };
-        options.push(Command::Leave);
+        options.extend_from_slice(&[Command::Fold, Command::Leave]);
         options
     }
 }
@@ -77,7 +76,7 @@ impl HumanPlayer for Player {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Command {
     PostBlind,
     Fold,

@@ -1,10 +1,9 @@
 
-use super::player::{Player, ComputerPlayer, HumanPlayer};
+use super::player::{Player, ComputerPlayer, HumanPlayer, Command};
 use super::card::{Card, Suit, Hand};
 
 use rand::{thread_rng, Rng};
 use std::rc::Rc;
-use std::cell::RefCell;
 use std::cmp::Ordering;
 
 pub struct Table {
@@ -79,24 +78,41 @@ impl Table {
 
     pub fn allow_betting(&mut self) {
         for i in 0..self.active_players.len() {
-            let ref player = self.active_players[i];
+            let mut player = self.active_players.remove(i);
             let cmd = if player.is_human {
-                HumanPlayer::act(player, self);
+                HumanPlayer::act(&player, self)
             } else {
-                ComputerPlayer::act(player, self);
+                ComputerPlayer::act(&player, self)
             };
+            if cmd == Command::Fold {
+                self.players.push(player);
+            } else {
+                self.process_command(cmd, &mut player);
+                self.active_players.insert(i, player);
+            } 
         }
     }
 
-    // pub fn withdraw_player(&mut self, player: &Player) {
-    //     let mut idx : usize = 0;
-    //     for i in 0..self.active_players.len() {
-    //         if self.active_players[i].borrow().name == player.borrow().name {
-    //             idx = i;
-    //         }
-    //     }
-    //     self.active_players.remove(idx);
-    // }
+    pub fn process_command(&mut self, cmd: Command, player: &mut Player) {
+        let largest_bet = self.largest_bet;
+        match cmd {
+            Command::PostBlind => self.place_bet(player, 10),
+            Command::Fold => {},
+            Command::Check => {},
+            Command::Call => self.place_bet(player, largest_bet),
+            Command::Raise(x) => {
+                self.largest_bet += x;
+                self.place_bet(player, largest_bet + x);
+            },
+            Command::Leave => {},
+        }
+
+    }
+
+    pub fn place_bet(&mut self, player: &mut Player, amount: i32) {
+        player.chips -= amount;
+        self.pot += amount;
+    }
 
     pub fn evaluate_round(&mut self) {
         let mut winners = Vec::new();
@@ -136,8 +152,9 @@ impl Table {
         print!("The winner(s) is : ");
         for winner in winners {
             let (hand, name) = winner;
-            println!("{} with {}", name, hand);
+            print!("{} with {}", name, hand);
         }
+        println!("");
     }
 
     fn reset_table(&mut self) {
