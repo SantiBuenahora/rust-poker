@@ -40,14 +40,15 @@ impl Player {
             vec![Command::PostBlind]
         
         } else {
-            let mut options = vec![Command::Raise(chips - largest_bet)];
-            if largest_bet > chips_in_play {
-                options.push(Command::Call);
+            vec![Command::Check]
+            // // let mut options = vec![Command::Raise(chips - largest_bet)];
+            // if largest_bet > chips_in_play {
+            //     options.push(Command::Call);
 
-            } else if largest_bet == chips_in_play {
-                options.push(Command::Check);
-            }
-            options
+            // } else if largest_bet == chips_in_play {
+            //     options.push(Command::Check);
+            // }
+            // options
         };
         options.extend_from_slice(&[Command::Fold, Command::Leave]);
         options

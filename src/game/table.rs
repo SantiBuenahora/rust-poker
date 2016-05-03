@@ -5,6 +5,7 @@ use super::card::{Card, Suit, Hand};
 use rand::{thread_rng, Rng};
 use std::rc::Rc;
 use std::cmp::Ordering;
+use std::process::exit;
 
 pub struct Table {
     players: Vec<Player>,
@@ -104,7 +105,7 @@ impl Table {
                 self.largest_bet += x;
                 self.place_bet(player, largest_bet + x);
             },
-            Command::Leave => {},
+            Command::Leave => exit(1),
         }
 
     }
